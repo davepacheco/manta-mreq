@@ -106,9 +106,17 @@ pub fn mri_dump(mri : &MantaRequestInfo)
 
     let timeline = mri_timeline(mri);
     println!("");
-    println!("{:30} {:>6} {:>6} {}", "WALL TIMESTAMP", "TIMEms", "ELAPms",
-        "EVENT");
-    for event in timeline.tl_events {
+    mri_dump_timeline(&timeline, true);
+}
+
+fn mri_dump_timeline(timeline : &Timeline, dumpHeader : bool)
+{
+    if dumpHeader {
+        println!("{:30} {:>6} {:>6} {}", "WALL TIMESTAMP", "TIMEms", "ELAPms",
+            "EVENT");
+    }
+
+    for event in &timeline.tl_events {
         /*
          * The formatter for the timestamps does not appear to implement width
          * specifiers, so in order to do that properly, we must first format it
@@ -119,6 +127,11 @@ pub fn mri_dump(mri : &MantaRequestInfo)
         println!("{:30} {:6} {:6} {}", wall_start,
             event.relative_start().num_milliseconds(),
             event.duration().num_milliseconds(), event.label());
+
+        let subtimeline = event.subtimeline();
+        if subtimeline.is_some() {
+            mri_dump_timeline(&subtimeline.unwrap(), false);
+        }
     }
 }
 
@@ -215,6 +228,7 @@ fn mri_timeline(mri : &MantaRequestInfo)
     }
 
     timeline.add_timeline("muskie processing", Box::new(muskie_timeline));
+    timeline.finalize();
     return timeline;
 }
 
@@ -291,6 +305,11 @@ impl Timeline {
     {
         return self.tl_end - self.tl_start.expect("timeline not finalized");
     }
+
+    pub fn print(&self)
+    {
+
+    }
 }
 
 //
@@ -316,7 +335,7 @@ impl TimelineEvent {
         -> chrono::Duration
     {
         // XXX
-        return self.te_relative_start.unwrap().clone();
+        return self.te_relative_start.expect("timeline not finalized").clone();
     }
 
     pub fn wall_end(&self)
@@ -335,5 +354,11 @@ impl TimelineEvent {
         -> String
     {
         return self.te_label.clone();
+    }
+
+    pub fn subtimeline(&self)
+        -> &Option<Box<Timeline>>
+    {
+        return &self.te_timeline;
     }
 }
