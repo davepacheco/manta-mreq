@@ -259,7 +259,7 @@ impl Timeline {
             te_relative_start : None,
             te_duration : duration.clone(),
             te_label: String::from(label).clone(),
-            te_timeline: subtimeline
+            te_timeline: subtimeline.map(|x| *x)
         });
 
         self.tl_events.sort_by(|a, b|
@@ -321,7 +321,7 @@ struct TimelineEvent {
     te_relative_start : Option<chrono::Duration>,
     te_duration : chrono::Duration,
     te_label : String,
-    te_timeline : Option<Box<Timeline>>
+    te_timeline : Option<Timeline>
 }
 
 impl TimelineEvent {
@@ -357,8 +357,8 @@ impl TimelineEvent {
     }
 
     pub fn subtimeline(&self)
-        -> &Option<Box<Timeline>>
+        -> Option<&Timeline>
     {
-        return &self.te_timeline;
+        return self.te_timeline.map(|x| Some(&x));
     }
 }
